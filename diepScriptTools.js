@@ -844,8 +844,8 @@ ctxPrototype.strokeText = strokeText;
 ctxPrototype.fillText = fillText;
 ctxPrototype.stroke = stroke;
 
-Object.freeze(ctxPrototype);
-Object.freeze(Function.prototype);
+//Object.freeze(ctxPrototype);
+//Object.freeze(Function.prototype);
 
 
 
