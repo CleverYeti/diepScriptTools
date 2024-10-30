@@ -25,6 +25,15 @@ const dst = {
     },
 
     init: function() {
+		dst.window.dst = dst
+
+		// load settings
+		try {
+			dst.savedSettings = window.localStorage.getItem("dst_settings") ? JSON.parse(window.localStorage.getItem("dst_settings")) : {keybinds: {}}
+		} catch {
+			alert("failed to load DST settings")
+		}
+
 		// default keybinds
 		dst.registerDefaultKeybind("Main Keybinds", "move_up", [87,38], 23)
 		dst.registerDefaultKeybind("Main Keybinds", "move_right", [68,39], 4)
@@ -62,6 +71,9 @@ const dst = {
 
 		dst.registerKeybind("DST", "toggle_dst_settings", [226])
 		dst.listenToKeybind("toggle_dst_settings", dst.toggleConfigScreen, true)
+
+		// censoring
+		dst.registerSetting("misc", "censor_player_names", false, "bool")
 
 		console.log(this.keybinds)
 		
@@ -255,28 +267,6 @@ const dst = {
 			}
 			
 		`)
-
-        // load settings
-		try {
-			const savedSettings = window.localStorage.getItem("dst_settings") ? JSON.parse(window.localStorage.getItem("dst_settings")) : {}
-			for (settingId in savedSettings) {
-				if (settingId == "keybinds") continue
-				if (dst.settings[settingId]) {
-					for (listener in dst.settings[settingId].listeners) listener(dst.settings[settingId].value, savedSettings[settingId])
-					dst.settings[settingId].value = savedSettings[settingId]
-				}
-			}
-			const savedBinds = savedSettings.keybinds
-			if (savedBinds) {
-				for (let keybindId in savedBinds) {
-					if (this.keybinds[keybindId]) {
-						this.keybinds[keybindId].keys = savedBinds[keybindId].keys
-					}
-				}
-			}
-		} catch {
-			alert("failed to load DST settings")
-		}
 		
 		// call onready for all scripts
         for (let scriptId in this.scripts) {
@@ -303,6 +293,9 @@ const dst = {
 					dst.listenToNextKeyCallback(key)
 					return
 				}
+				if (key == 0 && (dst.isConfigOpen || dst.gameInfo.currentScreen != "in_game")) {
+					return
+				}
 			}
 			
 			for (let keybindId in dst.keybinds) {
@@ -327,6 +320,34 @@ const dst = {
 		})
 		this.window.addEventListener("mouseup", event => {
 			handleKeyEvent(event.button, false)
+		})
+
+		// party link management
+		const _copyToKeyboard = dst.window.copyToKeyboard
+		function copyToKeyboard(text) {
+			let url
+			try {
+				url = URL.parse(text)
+			} catch {
+				console.log("failed parsing party link")
+				return
+			}
+			dst.gameInfo.partyId = url.searchParams.get("p")
+			dst.copyPartyLink()
+		}
+		dst.window.copyToKeyboard = copyToKeyboard
+
+		dst.registerTickFunction(() => {
+			if (dst.window.document.querySelector("#copy-party-link.active") && ["in-game", "game-over"].includes(dst.gameInfo.gameState)) {
+				if (!dst.gameInfo.partyId) {
+					dst.window.document.querySelector("#copy-party-link").click()
+				}
+			} else {
+				if (dst.gameInfo.partyId) {
+					dst.gameInfo.partyId = null
+					dst.copyPartyLink()
+				}
+			}
 		})
 
 		// initialising overlay canvas
@@ -377,6 +398,9 @@ const dst = {
 		this.overlayCanvas.height  = window.innerHeight;
 		this.overlayCtx.clearRect(0, 0, canvas.width, canvas.height);
 
+		// last gameInfo
+		dst.previousGameInfo = JSON.parse(JSON.stringify(dst.gameInfo))
+
 		// tick functions
 		for (let func of this.tickFunctions) {
 			func(this.screenInfo.frameDeltaTime, this.overlayCtx)
@@ -395,13 +419,15 @@ const dst = {
 	keyNames: ["left mouse","middle mouse","right mouse","mouse 4","mouse 5",0,0,0,"backspace","tab",0,0,0,"enter",0,0,"shift","ctrl","alt","pause","caps lock",0,0,0,0,0,0,"esc",0,0,0,0,"space","page up","page down","end","home","left arrow","up arrow","right arrow","down arrow",0,0,0,"print screen","insert","delete",0,"0","1","2","3","4","5","6","7","8","9",0,0,0,0,0,0,0,"a","b","c","d","e","f","g","h","i","j","k","l","m","m","o","p","q","r","s","t","u","v","w","x","y","z",0,0,0,0,0,"numpad 0","numpad 1","numpad 2","numpad 3","numpad 4","numpad 5","numpad 6","numpad 7","numpad 8","numpad 9","numpad multiply","numpad add",0,"numpad subtract","numpad point","numpad divide","f1","f2","f3","f4","f5","f6","f7","f8","f9","f10","f11","f12",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"num lock","scroll lock",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"semi-colon","equal","comma","dash","period","slash","backquote",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"open bracket","back slash","close bracket","quote",0,0,0,"back slash"],
     registerDefaultKeybind: function(settingGroupId, keybindId, defaultKeys, keyToPress) {
         if (this.keybinds[keybindId] != undefined) return this.showError("two keybinds with the same id (" + keybindId + ") are being registered")
-		this.keybinds[keybindId] = {settingGroupId: settingGroupId, defaultKeys: defaultKeys, keys: defaultKeys, listeners: [], isPressed: false, isDefault: true}
+		const keys = dst.savedSettings.keybinds[keybindId] ? dst.savedSettings.keybinds[keybindId].keys : defaultKeys
+		this.keybinds[keybindId] = {settingGroupId: settingGroupId, defaultKeys: defaultKeys, keys: keys, listeners: [], isPressed: false, isDefault: true}
 		this.listenToKeybind(keybindId, ()=>{this.extern.onKeyDown(keyToPress)}, true)
 		this.listenToKeybind(keybindId, ()=>{this.extern.onKeyUp(keyToPress)}, false)
 	},
     registerKeybind: function(settingGroupId, keybindId, defaultKeys) {
         if (this.keybinds[keybindId] != undefined) return this.showError("two keybinds with the same id (" + keybindId + ") are being registered")
-        this.keybinds[keybindId] = {settingGroupId: settingGroupId, defaultKeys: defaultKeys, keys: defaultKeys, listeners: [], isPressed: false}
+		const keys = dst.savedSettings.keybinds[keybindId] ? dst.savedSettings.keybinds[keybindId].keys : defaultKeys
+        this.keybinds[keybindId] = {settingGroupId: settingGroupId, defaultKeys: defaultKeys, keys: keys, listeners: [], isPressed: false}
     },
     listenToKeybind: function(keybindId, func, isPress) {
         const targetBind = this.keybinds[keybindId]
@@ -420,16 +446,47 @@ const dst = {
     },
 
 	// setting management
+	savedSettings: {},
 	settings: {},
+	settingsAreImported: false,
 	registerSetting: function(settingGroupId, settingId, defaultValue, valueType) {
 		const valueTypes = ["bool"]
         if (this.settings[settingId] != undefined) return this.showError("two settings with the same id (" + settingId + ") are being registered")
 		if (!valueTypes.includes(valueType)) return this.showError("invalid setting value type (" + valueType + ") settingId: " + settingId)
-		this.settings[settingId] = {settingGroupId: settingGroupId, defaultValue: defaultValue, value: defaultValue, valueType: valueType, listeners: []}
+		this.settings[settingId] = {settingGroupId: settingGroupId, defaultValue: defaultValue, value: dst.savedSettings[settingId] ?? defaultValue, valueType: valueType, listeners: []}
 	},
 	listenToSettingChange(settingId, func = (newValue, previousValue) => {}) {
         if (this.settings[settingId] != undefined) return this.showError("cannot listen to changes in inexistant setting (" + settingId + ")")
 		this.settings[settingId].listeners.push(func)
+	},
+	getSettingsAsJson: function() {
+		if (this.settingsAreImported) return
+		const formatted = {}
+		for (let settingId in dst.settings) {
+			formatted[settingId] = dst.settings[settingId].value
+		}
+		formatted.keybinds = {}
+		for (keybindId in dst.keybinds) {
+			formatted.keybinds[keybindId] = {keys: dst.keybinds[keybindId].keys}
+		}
+		return formatted
+	},
+	saveSettings: function(settings) {
+		window.localStorage.setItem("dst_settings", JSON.stringify(this.getSettingsAsJson()));
+	},
+	importSettings: function() {
+		const input = prompt("Paste saved keybinds here")
+		if (input == null) return
+		try {
+			window.localStorage.setItem("dst_settings", JSON.stringify(JSON.parse(input)));
+			dst.settingsAreImported = true
+			alert("Reload the page to apply imported settings")
+		} catch {
+			alert("Invalid settings JSON")
+		}
+	},
+	exportSettings: function() {
+		prompt("Copy the text below:", JSON.stringify(dst.getSettingsAsJson()))
 	},
 
 	// event management
@@ -438,10 +495,10 @@ const dst = {
 		if (dst.events[eventId] == undefined) dst.events[eventId] = {listeners: []}
 		dst.events[eventId].listeners.push(func)
 	},
-	triggerEvent: function(eventId) {
+	triggerEvent: function(eventId, eventData) {
 		if (dst.events[eventId] == undefined) dst.events[eventId] = {listeners: []}
 		for (let listener of dst.events[eventId].listeners) {
-			listener()
+			listener(eventData)
 		}
 	},
 
@@ -485,19 +542,25 @@ const dst = {
 		}
 	},
 
-
 	// game info
 	gameInfo: {
+		gameMode: "ffa",
+		region: "atl",
+		partyId: null,
+		dstPartyId: "wow",
+		isConnected: false,
+		
+		gameState: null,
 		currentScreen: "home",
+
 		arenaWidth: 26000,
 		arenaHeight: 26000,
+		
 		isAlive: false,
 		health: 0,
 		maxHealth: 0,
 		statPoints: [null,0,0,0,0,0,0,0,0],
 		position: {x:0,y:0},
-		screenMousePosition: {x:0, y:0},
-		worldMousePosition: {x:0, y:0},
 		playerRotation: 0, // computed from position and worldMousePosition 
 		teamName: "",
 		teamNumber: 0, // 0,1,2,3
@@ -509,7 +572,10 @@ const dst = {
 		tankTier: 0, // currently selected tank tier
 		leaderboard: [], // {username:, score:, tank}
 		kills: [], // {username:, gainedScore:}
+		screenMousePosition: {x:0, y:0},
+		worldMousePosition: {x:0, y:0},
 	},
+	previousGameInfo: {},
 
 	screenInfo: {
 		minimap: {x: 0, y: 0, width: 0, height: 0},
@@ -554,36 +620,18 @@ const dst = {
 		return document.createTextNode(text)
 	},
 
-	// settings
-	settingsAreImported: false,
-	getSettingsAsJson: function() {
-		if (this.settingsAreImported) return
-		const formatted = {}
-		for (let settingId in dst.settings) {
-			formatted[settingId] = dst.settings[settingId].value
+	// swapping in the party link for the modified one
+	copyPartyLink: function() {
+		const url = URL.parse("https://diep.io")
+		if (dst.gameInfo.partyId) {
+			url.searchParams.append("p", dst.gameInfo.partyId)
 		}
-		formatted.keybinds = {}
-		for (keybindId in dst.keybinds) {
-			formatted.keybinds[keybindId] = {keys: dst.keybinds[keybindId].keys}
-		}
-		return formatted
-	},
-	saveSettings: function(settings) {
-		window.localStorage.setItem("dst_settings", JSON.stringify(this.getSettingsAsJson()));
-	},
-	importSettings: function() {
-		const input = prompt("Paste saved keybinds here")
-		if (input == null) return
-		try {
-			window.localStorage.setItem("dst_settings", JSON.stringify(JSON.parse(input)));
-			dst.settingsAreImported = true
-			alert("Reload the page to apply imported settings")
-		} catch {
-			alert("Invalid settings JSON")
-		}
-	},
-	exportSettings: function() {
-		prompt("Copy the text below:", JSON.stringify(dst.getSettingsAsJson()))
+		// no dst id for now
+		//if (dst.gameInfo.dstPartyId) {
+		//	url.searchParams.append("dstparty", dst.gameInfo.dstPartyId)
+		//}
+		dst.window.navigator.clipboard.writeText(url.toString())
+		window.history.pushState({ path: url.toString() }, '', url.toString());
 	},
 
 	// config screen
@@ -689,7 +737,7 @@ const dst = {
 				dst.listenToNextKeyCallback = null
 				el.querySelector(".addBind").innerText = "+"
 				el.querySelector(".addBind").classList.remove("active")
-				if (!bind.keys.includes(key)) {
+				if (!bind.keys.includes(key) && key != 27) {
 					bind.keys.push(key)
 					el.querySelector(".bindList").appendChild(
 						renderKeyBtn(bind, key)
@@ -710,18 +758,26 @@ const dst = {
 		return el
 	},
 }
+dst.init()
 
-// censoring
-dst.registerSetting("misc", "censor_player_names", false, "bool")
 
-// tracking which screen is active
+
+
+// tracking which screen is active and the gameState
 dst.registerTickFunction(() => {
 	const screens = ["loading", "status_message", "home", "in_game", "game_over"]
+	let newScreen = null
 	for (screen of screens) {
 		if (dst.window.document.querySelector("#" + screen.replaceAll("_", "-") + "-screen.active")) {
-			dst.gameInfo.currentScreen = screen
+			newScreen = screen
 		}
 	}
+	if (newScreen != dst.gameInfo.currentScreen) {
+		dst.triggerEvent("screenChange", {oldScreen: dst.gameInfo.currentScreen, newScreen: newScreen})
+		dst.gameInfo.currentScreen = newScreen
+	}
+	dst.gameInfo.gameState = dst.window.document.getElementById("home-screen").getAttribute("x-state")
+	dst.gameInfo.isConnected = ["awaiting-spawn", "in-game", "game-over"].includes(dst.gameInfo.gameState)
 })
 
 // button to open dst settings
@@ -855,7 +911,3 @@ ctxPrototype.stroke = stroke;
 // kill {player:{username:, gainedScore:}}
 // death {killer:{username:},gameInfoOnDeath:{<gameInfo>}}
 
-
-dst.window.dst = dst
-
-dst.init()
