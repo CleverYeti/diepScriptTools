@@ -4,7 +4,7 @@
 // @author       Clever yeti
 // @match        https://diep.io/*
 // @run-at       document-start
-// @require      https://raw.githubusercontent.com/CleverYeti/diepScriptTools/refs/heads/main/profanityFilter.js
+// @require      https://raw.githubusercontent.com/CleverYeti/diepScriptTools/refs/heads/main/profanityFilterV2.js
 // ==/UserScript==
 
 
@@ -18,7 +18,7 @@ const dst = {
 	},
     window: typeof unsafeWindow != "undefined" ? unsafeWindow : window,
     scripts: {},
-    
+
     registerScript: function(script) {
         if (this.scripts[script.id] != undefined) return this.showError("two scripts with the same id (" + script.id + ") are being registered")
         this.scripts[script.id] = script
@@ -44,7 +44,7 @@ const dst = {
 		dst.registerDefaultKeybind("Main Keybinds", "secondary", [16, 2], 34)
 		dst.registerDefaultKeybind("Main Keybinds", "auto_fire", [69], 5)
 		dst.registerDefaultKeybind("Main Keybinds", "auto_spin", [67], 3)
-		
+
 		dst.registerDefaultKeybind("Stats", "queue_stat", [85], 21)
 		dst.registerDefaultKeybind("Stats", "max_stat", [77], 13)
 		dst.registerDefaultKeybind("Stats", "stat_1", [49], 48)
@@ -55,12 +55,12 @@ const dst = {
 		dst.registerDefaultKeybind("Stats", "stat_6", [54], 53)
 		dst.registerDefaultKeybind("Stats", "stat_7", [55], 54)
 		dst.registerDefaultKeybind("Stats", "stat_8", [56], 55)
-		
+
 		dst.registerDefaultKeybind("Sandbox Cheats", "self_destruct", [79], 15)
 		dst.registerDefaultKeybind("Sandbox Cheats", "level_up", [75], 11)
 		dst.registerDefaultKeybind("Sandbox Cheats", "god_mode", [186], 60)
 		dst.registerDefaultKeybind("Sandbox Cheats", "switch_tank", [191], 64)
-		
+
 		dst.registerDefaultKeybind("Misc", "show_tree", [89], 25)
 		dst.registerDefaultKeybind("Misc", "show_player_list", [9], 31)
 		dst.registerDefaultKeybind("Misc", "show_ping", [76], 12)
@@ -76,7 +76,7 @@ const dst = {
 		dst.registerSetting("misc", "censor_player_names", false, "bool")
 
 		console.log(this.keybinds)
-		
+
 		// mouse reading
 		document.addEventListener("mousemove", (event) => {
 			dst.gameInfo.screenMousePosition = {x: event.clientX, y: event.clientY}
@@ -91,7 +91,7 @@ const dst = {
             }
         }, 100)
     },
-    
+
     // main part of the script
     onready: function() {
 
@@ -123,7 +123,7 @@ const dst = {
 				z-index: 999999;
 				padding: 2rem;
 			}
-			
+
 			#DSTConfig > .menu {
 				width: 50rem;
 				height: calc(100vh - 4rem);
@@ -133,13 +133,13 @@ const dst = {
 				overflow-y: auto;
 				backdrop-filter: blur(0.5rem)
 			}
-			
+
 			.DSTText {
 				font-family: "Ubuntu", sans-serif;
 				color: white;
 				text-shadow: calc(1* 0.4px) calc(1* 0.4px) 0 #000, calc(-1* 0.4px) calc(1* 0.4px) 0 #000, calc(1* 0.4px) calc(-1* 0.4px) 0 #000, calc(-1* 0.4px) calc(-1* 0.4px) 0 #000, calc(0* 0.4px) calc(1* 0.4px) 0 #000, calc(0* 0.4px) calc(-1* 0.4px) 0 #000, calc(-1* 0.4px) calc(0* 0.4px) 0 #000, calc(1* 0.4px) calc(0* 0.4px) 0 #000, calc(2* 0.4px) calc(2* 0.4px) 0 #000, calc(-2* 0.4px) calc(2* 0.4px) 0 #000, calc(2* 0.4px) calc(-2* 0.4px) 0 #000, calc(-2* 0.4px) calc(-2* 0.4px) 0 #000, calc(0* 0.4px) calc(2* 0.4px) 0 #000, calc(0* 0.4px) calc(-2* 0.4px) 0 #000, calc(-2* 0.4px) calc(0* 0.4px) 0 #000, calc(2* 0.4px) calc(0* 0.4px) 0 #000, calc(1* 0.4px) calc(2* 0.4px) 0 #000, calc(-1* 0.4px) calc(2* 0.4px) 0 #000, calc(1* 0.4px) calc(-2* 0.4px) 0 #000, calc(-1* 0.4px) calc(-2* 0.4px) 0 #000, calc(2* 0.4px) calc(1* 0.4px) 0 #000, calc(-2* 0.4px) calc(1* 0.4px) 0 #000, calc(2* 0.4px) calc(-1* 0.4px) 0 #000, calc(-2* 0.4px) calc(-1* 0.4px) 0 #000;
 			}
-			
+
 			#DSTConfig > .menu > .header {
 				display: flex;
 				align-items: center;
@@ -147,15 +147,15 @@ const dst = {
 				height: 10rem;
 				padding: 0 2rem;
 			}
-			
+
 			#DSTConfig > .menu > .header > .logo {
 				height: 7rem;
 			}
-			
+
 			#DSTConfig > .menu > .header > .buttons {
-				
+
 			}
-			
+
 			#DSTConfig > .menu > .header > .buttons > .button {
 				display: grid;
 				place-content: center;
@@ -166,21 +166,21 @@ const dst = {
 				box-shadow: inset 0 0 0 0.1875rem var(--border-color), inset 0 -0.5rem #0000001b;
 				cursor: pointer;
 			}
-			
+
 			#DSTConfig > .menu > .header > .buttons > .importButton {
 				background: #2298FF;
 			}
 			#DSTConfig > .menu > .header > .buttons > .exportButton {
 				background: #2D5AFF;
 			}
-			
-			
+
+
 			#DSTConfig > .menu > .seperator {
 				height: 0.25rem;
 				margin: 0 1rem;
 				background: var(--border-color)
 			}
-			
+
 			#DSTConfig > .menu > .settings {
 				padding: 0 2rem 1.5rem 2rem;
 			}
@@ -200,7 +200,7 @@ const dst = {
 			#DSTConfig > .menu > .settings > .settingLine:hover {
 				background: #00000044;
 			}
-			
+
 			#DSTConfig > .menu > .settings > .settingLine > .bindList {
 				display: flex;
 				flex-direction: row-reverse;
@@ -216,9 +216,9 @@ const dst = {
 				cursor: pointer;
 				background: #2298FF;
 			}
-			
+
 			#DSTConfig > .menu > .settings > .settingLine > .bindList > .bind:hover {
-				background: red;			
+				background: red;
 			}
 
 			#DSTConfig > .menu > .settings > .settingLine > .bindList > .addBind {
@@ -232,13 +232,13 @@ const dst = {
 				cursor: pointer;
 				background: #2D5AFF;
 			}
-			
+
 			#DSTConfig > .menu > .settings > .settingLine > .bindList > .addBind.active {
 				width: auto;
 				font-size: 1rem;
 				padding: 0 0.75rem;
 			}
-			
+
 			#DSTConfig > .menu > .settings > .settingLine > .toggle {
 				position: relative;
 				background: #888;
@@ -265,9 +265,9 @@ const dst = {
 				inset: -0.25rem -0.25rem -0.25rem auto;
 				background: #2298FF;
 			}
-			
+
 		`)
-		
+
 		// call onready for all scripts
         for (let scriptId in this.scripts) {
             const script = this.scripts[scriptId]
@@ -284,7 +284,7 @@ const dst = {
 		// listen to key presses
 		function handleKeyEvent(key, isPress) {
 			if (dst.DEBUG.logKeyEvents) console.log("key event", key, isPress)
-			
+
 			if (isPress) {
 				if (document.querySelector('#spawn-input > input:focus')) {
 					return
@@ -297,7 +297,7 @@ const dst = {
 					return
 				}
 			}
-			
+
 			for (let keybindId in dst.keybinds) {
 				const keybind = dst.keybinds[keybindId]
 				if (keybind.keys.includes(key)) {
@@ -358,7 +358,7 @@ const dst = {
 		this.overlayCanvas.style.pointerEvents = "none"
 		document.body.appendChild(this.overlayCanvas)
 		this.overlayCtx = this.overlayCanvas.getContext('2d');
-		
+
 		// starting tick loop
 		dst.triggerEvent("ready")
 		this.tick()
@@ -546,22 +546,22 @@ const dst = {
 	gameInfo: {
 		gameMode: "ffa",
 		region: "atl",
-		partyId: null,
-		dstPartyId: "wow",
+		partyId: "load",
+		dstPartyId: null,
 		isConnected: false,
-		
+
 		gameState: null,
 		currentScreen: "home",
 
 		arenaWidth: 26000,
 		arenaHeight: 26000,
-		
+
 		isAlive: false,
 		health: 0,
 		maxHealth: 0,
 		statPoints: [null,0,0,0,0,0,0,0,0],
 		position: {x:0,y:0},
-		playerRotation: 0, // computed from position and worldMousePosition 
+		playerRotation: 0, // computed from position and worldMousePosition
 		teamName: "",
 		teamNumber: 0, // 0,1,2,3
 		username: "",
@@ -600,7 +600,7 @@ const dst = {
 		this.window.document.body.appendChild(el)
 	},
 
-	// simplifying html element creation 
+	// simplifying html element creation
 	htmlEl: function(type, classes, extraFunc = null, children = []) {
 		const el = document.createElement(type)
 		for (let cl of classes.split(" ")) {
@@ -648,10 +648,10 @@ const dst = {
 	},
 	renderConfigScreen: function() {
 		if (document.getElementById("DSTConfig")) return
-		
+
 		const settingGroups = []
 		const keybindGroups = []
-		
+
 		for (let settingId in this.settings) {
 			if (!settingGroups.includes(this.settings[settingId].settingGroupId)) {
 				settingGroups.push(this.settings[settingId].settingGroupId)
@@ -743,7 +743,7 @@ const dst = {
 						renderKeyBtn(bind, key)
 					)
 				}
-			} 
+			}
 		}
 		const bind = this.keybinds[keybindId]
 		const el = this.htmlEl("div", "settingLine", null, [
