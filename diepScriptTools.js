@@ -51,6 +51,7 @@ const profanityFilter = {
         "masterba",
         "masturba",
         "nig",
+        "ngg",
         "n*g",
         "niig",
         "orgasm",
