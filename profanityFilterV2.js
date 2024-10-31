@@ -89,7 +89,7 @@ const profanityFilter = {
     exclude: [],
     placeHolder: '*',
     treatInput: function(str) {
-        str = str.lower()
+        str = str.toLowerCase()
         for (let swap of this.swapList) {
             str = str.replaceAll(swap[0], swap[1])
         }
