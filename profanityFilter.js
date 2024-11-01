@@ -100,8 +100,8 @@ const profanityFilter = {
         return str
     },
     treatList: function() {
-        for (let i = 0; i < this.list.length; i++) {
-            this.list[i] = this.treatInput(this.list[i])
+        for (let i = 0; i < this.blockList.length; i++) {
+            this.blockList[i] = this.treatInput(this.blockList[i])
         }
     },
     filter: function(input) {
