@@ -16,7 +16,8 @@ const dst = {
 		logScreenInfo: false,
 		logKeyEvents: false,
 		logBindEvents: false,
-		logTicks: true,
+		logTicks: false,
+		logSharingEvents: false,
 	},
     window: typeof unsafeWindow != "undefined" ? unsafeWindow : window,
     scripts: {},
@@ -95,7 +96,21 @@ const dst = {
     // main part of the script
     onready: function() {
 
+		// adding the ionicons module
+		const scriptModule = document.createElement("script");
+		scriptModule.type = "module";
+		scriptModule.src = "https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js";
+		dst.window.document.body.appendChild(scriptModule);
+		const scriptNoModule = document.createElement("script");
+		scriptNoModule.setAttribute("nomodule", "");
+		scriptNoModule.src = "https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js";
+		dst.window.document.body.appendChild(scriptNoModule);
+
+		// adding the css for the dst menu
 		dst.injectCSS(`
+			:root {
+				--dst-ui-scale: 1;
+			}
 			#openDSTSettings {
 				position: fixed;
 				top: 0.5rem;
@@ -138,6 +153,36 @@ const dst = {
 				font-family: "Ubuntu", sans-serif;
 				color: white;
 				text-shadow: calc(1* 0.4px) calc(1* 0.4px) 0 #000, calc(-1* 0.4px) calc(1* 0.4px) 0 #000, calc(1* 0.4px) calc(-1* 0.4px) 0 #000, calc(-1* 0.4px) calc(-1* 0.4px) 0 #000, calc(0* 0.4px) calc(1* 0.4px) 0 #000, calc(0* 0.4px) calc(-1* 0.4px) 0 #000, calc(-1* 0.4px) calc(0* 0.4px) 0 #000, calc(1* 0.4px) calc(0* 0.4px) 0 #000, calc(2* 0.4px) calc(2* 0.4px) 0 #000, calc(-2* 0.4px) calc(2* 0.4px) 0 #000, calc(2* 0.4px) calc(-2* 0.4px) 0 #000, calc(-2* 0.4px) calc(-2* 0.4px) 0 #000, calc(0* 0.4px) calc(2* 0.4px) 0 #000, calc(0* 0.4px) calc(-2* 0.4px) 0 #000, calc(-2* 0.4px) calc(0* 0.4px) 0 #000, calc(2* 0.4px) calc(0* 0.4px) 0 #000, calc(1* 0.4px) calc(2* 0.4px) 0 #000, calc(-1* 0.4px) calc(2* 0.4px) 0 #000, calc(1* 0.4px) calc(-2* 0.4px) 0 #000, calc(-1* 0.4px) calc(-2* 0.4px) 0 #000, calc(2* 0.4px) calc(1* 0.4px) 0 #000, calc(-2* 0.4px) calc(1* 0.4px) 0 #000, calc(2* 0.4px) calc(-1* 0.4px) 0 #000, calc(-2* 0.4px) calc(-1* 0.4px) 0 #000;
+			}
+			
+			.DSTScaledText {
+				font-family: "Ubuntu", sans-serif;
+				color: white;
+				text-shadow:
+					calc(var(--dst-ui-scale) * 1px) calc(var(--dst-ui-scale) * 1px) 0 #000,
+					calc(var(--dst-ui-scale) * -1px) calc(var(--dst-ui-scale) * 1px) 0 #000,
+					calc(var(--dst-ui-scale) * 1px) calc(var(--dst-ui-scale) * -1px) 0 #000,
+					calc(var(--dst-ui-scale) * -1px) calc(var(--dst-ui-scale) * -1px) 0 #000,
+					0 calc(var(--dst-ui-scale) * 1px) 0 #000,
+					0 calc(var(--dst-ui-scale) * -1px) 0 #000,
+					calc(var(--dst-ui-scale) * -1px) 0 0 #000,
+					calc(var(--dst-ui-scale) * 1px) 0 0 #000,
+					calc(var(--dst-ui-scale) * 2px) calc(var(--dst-ui-scale) * 2px) 0 #000,
+					calc(var(--dst-ui-scale) * -2px) calc(var(--dst-ui-scale) * 2px) 0 #000,
+					calc(var(--dst-ui-scale) * 2px) calc(var(--dst-ui-scale) * -2px) 0 #000,
+					calc(var(--dst-ui-scale) * -2px) calc(var(--dst-ui-scale) * -2px) 0 #000,
+					0 calc(var(--dst-ui-scale) * 2px) 0 #000,
+					0 calc(var(--dst-ui-scale) * -2px) 0 #000,
+					calc(var(--dst-ui-scale) * -2px) 0 0 #000,
+					calc(var(--dst-ui-scale) * 2px) 0 0 #000,
+					calc(var(--dst-ui-scale) * 1px) calc(var(--dst-ui-scale) * 2px) 0 #000,
+					calc(var(--dst-ui-scale) * -1px) calc(var(--dst-ui-scale) * 2px) 0 #000,
+					calc(var(--dst-ui-scale) * 1px) calc(var(--dst-ui-scale) * -2px) 0 #000,
+					calc(var(--dst-ui-scale) * -1px) calc(var(--dst-ui-scale) * -2px) 0 #000,
+					calc(var(--dst-ui-scale) * 2px) calc(var(--dst-ui-scale) * 1px) 0 #000,
+					calc(var(--dst-ui-scale) * -2px) calc(var(--dst-ui-scale) * 1px) 0 #000,
+					calc(var(--dst-ui-scale) * 2px) calc(var(--dst-ui-scale) * -1px) 0 #000,
+					calc(var(--dst-ui-scale) * -2px) calc(var(--dst-ui-scale) * -2px) 0 #000;
 			}
 			
 			#DSTConfig > .menu > .header {
@@ -587,6 +632,7 @@ const dst = {
 		fov: 0,
 		frameRate: 0,
 		frameDeltaTime: 0,
+		interfaceScale: 0
 	},
 
 	// text censoring
@@ -802,6 +848,49 @@ dst.registerTickFunction(()=>{
 
 // sharing position - could be a seperate script
 dst.listenToEvent("ready", ()=>{
+	dst.injectCSS(`
+		#dstPositionStatus {
+			position: absolute;
+			bottom: calc(205px * var(--dst-ui-scale));
+			left: calc(100vw - 195px * var(--dst-ui-scale));
+			margin: calc(-2.5px * var(--dst-ui-scale));
+			height: calc(35px * var(--dst-ui-scale));
+			width: calc(35px * var(--dst-ui-scale));
+			display: grid;
+			border-radius: calc(4px * var(--dst-ui-scale));
+			box-shadow: inset 0 0 0 calc(4px * var(--dst-ui-scale)) var(--border-color), inset 0 calc(-12px * var(--dst-ui-scale)) #0000001b;
+			background: #17D2FF;
+			z-index: 999999;
+			place-content: center;
+			font-size: calc(16px * var(--dst-ui-scale));
+			cursor: pointer;
+		}
+	`)
+	
+	function togglePositionStatus() {
+
+	}
+
+	const statusButton = dst.htmlEl("div", "DSTScaledText", (el) => {
+		el.id = "dstPositionStatus"
+		el.addEventListener("click", togglePositionStatus)
+	})
+	dst.window.document.body.appendChild(statusButton)
+	let lastIconStatus = "disconnected"
+	function setIconStatus(status) {
+		if (lastIconStatus == status) return
+		lastIconStatus = status
+
+		statusButton.style.display = status == "disabled" ? "none" : "grid"
+		statusButton.innerHTML = {
+			"disabled": "",
+			"blocked": '-',
+			"disconnected": '!',
+			"public": '🌍',
+			"private": '🔒'
+		}[status]
+	}
+
 	const socket = io('https://dst.onrender.com/')
 	let recievedData = {players: {}}
 	const positionShareInterval = 1000
@@ -813,10 +902,19 @@ dst.listenToEvent("ready", ()=>{
 	socket.emit("new-user", dst.gameInfo.username)
 
 	dst.registerTickFunction((deltaTime, ctx) => {
-		if (!dst.settings["share_position_with_all_teammates"].value) return
-		if (!dst.gameInfo.isAlive) return
-		if (dst.gameInfo.partyId == null) return
-		if (dst.gameInfo.gameMode == "sandbox") return
+		if (!dst.settings["share_position_with_all_teammates"].value) return setIconStatus("disabled")
+		if (!dst.gameInfo.isAlive) return setIconStatus("disabled")
+		if (dst.gameInfo.partyId == null) return setIconStatus("blocked")
+		if (dst.gameInfo.gameMode == "sandbox") return setIconStatus("blocked")
+		if (socket.connected) {
+			if (dst.gameInfo.dstPartyId != null) {
+				setIconStatus("private")
+			} else {
+				setIconStatus("public")
+			}
+		} else {
+			setIconStatus("disconnected")
+		}
 		// drawing
 		for (playerId in recievedData.players) {
 			if (playerId == socket.id) continue
@@ -837,12 +935,12 @@ dst.listenToEvent("ready", ()=>{
 			lastRecieveTimestamp = Date.now()
 		}
 		if (Date.now() - lastShareTimestamp > positionShareInterval && !isReconnecting) {
-			console.log("sharing position", dst.gameInfo.position)
+			if (dst.DEBUG.logSharingEvents) console.log("sharing position", dst.gameInfo.position)
 			lastShareTimestamp = Date.now()
 			socket.volatile.emit("send-position", dst.gameInfo.partyId, dst.gameInfo.username, dst.gameInfo.position.x, dst.gameInfo.position.y)
 		}
 		if (Date.now() - lastRecieveTimestamp > disconnectionThreshold && !isReconnecting) {
-			console.log("reconnecting")
+			if (dst.DEBUG.logSharingEvents) console.log("sharing is reconnecting")
 			isReconnecting = true
 			socket.disconnect()
 			recievedData = {players: {}}
@@ -857,7 +955,7 @@ dst.listenToEvent("ready", ()=>{
 	})
 	socket.on('recieve-positions', data => {
 		recievedData = data
-		console.log(data)
+		if (dst.DEBUG.logSharingEvents) console.log("recieved sharing data", data)
 		lastRecieveTimestamp = Date.now()
 	})
 })
@@ -948,7 +1046,6 @@ const strokeText = function (...args) {
 
 	} else if (args[0].startsWith("Score:")) {
 		dst.gameInfo.score = Number(args[0].split(" ")[1]);
-
 	}
 	args[0] = dst.filterText(args[0])
 	_strokeText.call(this, ...args);
@@ -959,10 +1056,17 @@ const fillText = function (...args) {
 }
 const strokeRect = function (...args) {
 	const transform = this.getTransform();
-	dst.screenInfo.minimap.x = transform.e
-	dst.screenInfo.minimap.y = transform.f
-	dst.screenInfo.minimap.width = transform.a
-	dst.screenInfo.minimap.height = transform.d
+	const newInterfaceScale = transform.a / 175
+	if (dst.screenInfo.interfaceScale != newInterfaceScale) {
+		dst.screenInfo.interfaceScale = newInterfaceScale
+		document.documentElement.style.setProperty('--dst-ui-scale', '' + newInterfaceScale);
+		dst.triggerEvent("uiResize", {interfaceScale: newInterfaceScale})
+		dst.screenInfo.minimap.x = transform.e
+		dst.screenInfo.minimap.y = transform.f
+		dst.screenInfo.minimap.width = transform.a
+		dst.screenInfo.minimap.height = transform.d
+		console.log(dst.window.innerWidth, dst.window.innerHeight, dst.screenInfo)
+	}
 
 	_strokeRect.call(this, ...args);
 };
