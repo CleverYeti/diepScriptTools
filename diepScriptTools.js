@@ -4,7 +4,7 @@
 // @author       Clever yeti
 // @match        https://diep.io/*
 // @run-at       document-start
-// @require      https://raw.githubusercontent.com/CleverYeti/diepScriptTools/refs/heads/main/profanityFilterV2.1.js
+// @require      https://raw.githubusercontent.com/CleverYeti/diepScriptTools/refs/heads/main/profanityFilterV2.2.js
 // @require      https://cdn.socket.io/4.8.0/socket.io.min.js
 // ==/UserScript==
 
@@ -77,8 +77,6 @@ const dst = {
 		// censoring
 		dst.registerSetting("misc", "censor_player_names", false, "bool")
 
-		console.log(this.keybinds)
-		
 		// mouse reading
 		document.addEventListener("mousemove", (event) => {
 			dst.gameInfo.screenMousePosition = {x: event.clientX, y: event.clientY}
@@ -816,6 +814,9 @@ dst.listenToEvent("ready", ()=>{
 
 	dst.registerTickFunction((deltaTime, ctx) => {
 		if (!dst.settings["share_position_with_all_teammates"].value) return
+		if (!dst.gameInfo.isAlive) return
+		if (dst.gameInfo.partyId == null) return
+		if (dst.gameInfo.gameMode == "sandbox") return
 		// drawing
 		for (playerId in recievedData.players) {
 			if (playerId == socket.id) continue
@@ -832,29 +833,26 @@ dst.listenToEvent("ready", ()=>{
 		ctx.arc(screenPos.x, screenPos.y, dst.screenInfo.minimap.height * 0.03, 0, Math.PI * 2, false);
 		ctx.fill();
 
-
-		if (dst.gameInfo.isAlive && dst.gameInfo.partyId != null) {
-			if (!(dst.previousGameInfo.isAlive && dst.previousGameInfo.partyId != null)) {
-				lastRecieveTimestamp = Date.now()
-			}
-			if (Date.now() - lastShareTimestamp > positionShareInterval && !isReconnecting) {
-				console.log("sharing position", dst.gameInfo.position)
-				lastShareTimestamp = Date.now()
-				socket.volatile.emit("send-position", dst.gameInfo.partyId, dst.gameInfo.username, dst.gameInfo.position.x, dst.gameInfo.position.y)
-			}
-			if (Date.now() - lastRecieveTimestamp > disconnectionThreshold && !isReconnecting) {
-				console.log("reconnecting")
-				isReconnecting = true
-				socket.disconnect()
-				recievedData = {players: {}}
-				setTimeout(() => {
-					socket.connect()
-					socket.emit("new-user", dst.gameInfo.username)
-				}, 1000);
-				setTimeout(() => {
-					isReconnecting = false
-				}, 2000)
-			}
+		if (!(dst.previousGameInfo.isAlive && dst.previousGameInfo.partyId != null)) {
+			lastRecieveTimestamp = Date.now()
+		}
+		if (Date.now() - lastShareTimestamp > positionShareInterval && !isReconnecting) {
+			console.log("sharing position", dst.gameInfo.position)
+			lastShareTimestamp = Date.now()
+			socket.volatile.emit("send-position", dst.gameInfo.partyId, dst.gameInfo.username, dst.gameInfo.position.x, dst.gameInfo.position.y)
+		}
+		if (Date.now() - lastRecieveTimestamp > disconnectionThreshold && !isReconnecting) {
+			console.log("reconnecting")
+			isReconnecting = true
+			socket.disconnect()
+			recievedData = {players: {}}
+			setTimeout(() => {
+				socket.connect()
+				socket.emit("new-user", dst.gameInfo.username)
+			}, 1000);
+			setTimeout(() => {
+				isReconnecting = false
+			}, 2000)
 		}
 	})
 	socket.on('recieve-positions', data => {
