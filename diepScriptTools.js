@@ -74,6 +74,7 @@ const dst = {
 
 		dst.registerKeybind("DST", "toggle_dst_settings", [226])
 		dst.listenToKeybind("toggle_dst_settings", dst.toggleConfigScreen, true)
+		dst.registerSetting("Debug", "disable_dst_keybind_system", false, "bool")
 
 		// censoring
 		dst.registerSetting("misc", "censor_player_names", false, "bool")
@@ -146,7 +147,7 @@ const dst = {
 				box-shadow: inset 0 0 0 0.25rem var(--border-color);
 				background: #00000055;
 				overflow-y: auto;
-				backdrop-filter: blur(0.5rem)
+				backdrop-filter: blur(0.5rem);
 			}
 			
 			.DSTText {
@@ -323,15 +324,25 @@ const dst = {
 		this.extern = {}
 		this.extern.onKeyDown = extern.onKeyDown
 		this.extern.onKeyUp = extern.onKeyUp
-		extern.onKeyDown = (keynum) => {}
-		extern.onKeyUp = (keynum) => {}
+		extern.onKeyDown = (keynum) => {
+			if (dst.settings["disable_dst_keybind_system"].value) {
+				console.log("WARNING: bypassed dst bind system")
+				dst.extern.onKeyDown(keynum)
+			}
+		}
+		extern.onKeyUp = (keynum) => {
+			if (dst.settings["disable_dst_keybind_system"].value) {
+				console.log("WARNING: bypassed dst bind system")
+				dst.extern.onKeyUp(keynum)
+			}
+		}
 
 		// listen to key presses
 		function handleKeyEvent(key, isPress) {
 			if (dst.DEBUG.logKeyEvents) console.log("key event", key, isPress)
 			
 			if (isPress) {
-				if (document.querySelector('#spawn-input > input:focus')) {
+				if (document.querySelector('#spawn-input > input:focus') != null && dst.gameInfo.currentScreen == "home") {
 					return
 				}
 				if (dst.listenToNextKeyCallback) {
@@ -344,7 +355,7 @@ const dst = {
 				}
 				
 			}
-			if (key == 0) return
+			if (key === 0) return
 
 			for (let keybindId in dst.keybinds) {
 				const keybind = dst.keybinds[keybindId]
@@ -354,20 +365,28 @@ const dst = {
 			}
 		}
 		this.window.addEventListener("keydown", event => {
-			handleKeyEvent(event.which, true)
+			if (!dst.settings["disable_dst_keybind_system"].value) {
+				handleKeyEvent(event.which, true)
+			}
 		})
 		this.window.addEventListener("keyup", event => {
-			handleKeyEvent(event.which, false)
+			if (!dst.settings["disable_dst_keybind_system"].value) {
+				handleKeyEvent(event.which, false)
+			}
 		})
 		this.window.addEventListener("mousedown", event => {
-			handleKeyEvent(event.button, true)
-			if (event.button == 4 || event.button == 5) {
-				e.stopPropagation()
-				e.preventDefault()
+			if (!dst.settings["disable_dst_keybind_system"].value) {
+				handleKeyEvent(event.button, true)
+				if (event.button == 4 || event.button == 5) {
+					e.stopPropagation()
+					e.preventDefault()
+				}
 			}
 		})
 		this.window.addEventListener("mouseup", event => {
-			handleKeyEvent(event.button, false)
+			if (!dst.settings["disable_dst_keybind_system"].value) {
+				handleKeyEvent(event.button, false)
+			}
 		})
 
 		// party link management
@@ -865,32 +884,166 @@ dst.listenToEvent("ready", ()=>{
 			font-size: calc(16px * var(--dst-ui-scale));
 			cursor: pointer;
 		}
+		
+		#dstPositionMenu {
+			position: absolute;
+			bottom: calc(250px * var(--dst-ui-scale));
+			right: calc(20px * var(--dst-ui-scale));
+			width: calc(180px * var(--dst-ui-scale));
+			margin: calc(-2.5px * var(--dst-ui-scale));
+			border-radius: calc(4px * var(--dst-ui-scale));
+			box-shadow: inset 0 0 0 calc(4px * var(--dst-ui-scale)) var(--border-color);
+  			background: #00000055;
+			backdrop-filter: blur(12px * var(--dst-ui-scale));
+			font-size: calc(16px * var(--dst-ui-scale));
+			z-index: 999999;
+		}
+		#dstPositionMenu > .text {
+			margin: calc(8px * var(--dst-ui-scale));
+		}
+		#dstPositionMenu > .button {
+			margin: calc(8px * var(--dst-ui-scale));
+			height: calc(35px * var(--dst-ui-scale));
+			display: grid;
+			place-content: center;
+			border-radius: calc(4px * var(--dst-ui-scale));
+			box-shadow: inset 0 0 0 calc(4px * var(--dst-ui-scale)) var(--border-color), inset 0 calc(-12px * var(--dst-ui-scale)) #0000001b;
+			background: #17D2FF;
+		}
+		#dstPositionMenu > .password {
+			border: none;
+			margin: calc(8px * var(--dst-ui-scale));
+			height: calc(35px * var(--dst-ui-scale));
+			display: flex;
+			gap: calc(8px * var(--dst-ui-scale));
+		}
+		#dstPositionMenu > .password > input {
+			height: calc(32.5px * var(--dst-ui-scale));
+			margin: 0;
+			width: 0;
+			flex-grow: 1;
+			display: grid;
+			place-content: center;
+			border-radius: calc(4px * var(--dst-ui-scale));
+			box-shadow: inset 0 0 0 calc(4px * var(--dst-ui-scale)) var(--border-color), inset 0 calc(-12px * var(--dst-ui-scale)) #0000001b;
+			background: #2298FF;
+			border: none;
+			font-size: calc(16px * var(--dst-ui-scale));
+			pointer-events: auto;
+			color: white;
+			padding-left: calc(8px * var(--dst-ui-scale));
+		}
+		#dstPositionMenu > .password > input::placeholder {
+			color: white;
+			opacity: 1;
+		}
+		#dstPositionMenu > .password > .clear {
+			height: calc(35px * var(--dst-ui-scale));
+			aspect-ratio: 1/1;
+			display: grid;
+			place-content: center;
+			border-radius: calc(4px * var(--dst-ui-scale));
+			box-shadow: inset 0 0 0 calc(4px * var(--dst-ui-scale)) var(--border-color), inset 0 calc(-12px * var(--dst-ui-scale)) #0000001b;
+			background: #2D5AFF;
+			cursor: pointer;
+		}
 	`)
-	
-	function togglePositionStatus() {
 
+	let currentStatus = "disconnected"
+	function setStatus(status) {
+		if (currentStatus == status) return
+		currentStatus = status
+		setIconStatus()
+		setMenuStatus()
 	}
-
+	
+	// status icon
 	const statusButton = dst.htmlEl("div", "DSTScaledText", (el) => {
 		el.id = "dstPositionStatus"
-		el.addEventListener("click", togglePositionStatus)
+		el.addEventListener("click", (event) => {
+			togglePositionMenu()
+			event.stopPropagation()
+		})
 	})
 	dst.window.document.body.appendChild(statusButton)
+	
 	let lastIconStatus = "disconnected"
-	function setIconStatus(status) {
-		if (lastIconStatus == status) return
-		lastIconStatus = status
-
-		statusButton.style.display = status == "disabled" ? "none" : "grid"
+	function setIconStatus() {
+		statusButton.style.display = currentStatus == "disabled" ? "none" : "grid"
 		statusButton.innerHTML = {
 			"disabled": "",
 			"blocked": '-',
 			"disconnected": '!',
 			"public": '🌍',
 			"private": '🔒'
-		}[status]
+		}[currentStatus]
 	}
 
+	// menu
+	let statusText = null
+	let statusMenu = null
+	function setMenuStatus() {
+		if (statusMenu == null) return
+		if (currentStatus == "disabled") togglePositionMenu()
+		statusText.innerText = {
+			"disabled": "Disabled",
+			"disabled": "Unavailable in this gamemode",
+			"disconnected": "Attempting to connect. The server may be starting up.",
+			"public": "Sharing position to whole team",
+			"private": "Sharing position privately with the password below",
+		}[currentStatus]
+	}
+	dst.window.document.addEventListener("click", () => {
+		if (statusMenu) {
+			statusMenu.querySelector(".password > input").blur()
+		}
+	})
+	function togglePositionMenu() {
+		if (statusMenu == null) {
+			statusMenu = dst.htmlEl("div", "DSTScaledText", (el) => {el.id = "dstPositionMenu"}, [
+				dst.htmlEl("div", "text", (el) => {statusText = el}, ["loading"]),
+				dst.htmlEl("div", "button", (el) => {el.addEventListener("click", () => {
+					dst.settings["share_position_with_teammates"].value = false
+					togglePositionMenu()
+				})}, ["disable sharing"]),
+				dst.htmlEl("div", "password DSTScaledText", null, [
+					dst.htmlEl("input", "DSTScaledText", (el) => {
+						el.type = "text"
+						el.placeholder = "no password"
+						el.value = dst.gameInfo.dstPartyId ?? ""
+						el.addEventListener("input", passwordChange)
+						el.addEventListener("keydown", (event) => {
+							event.stopPropagation()
+							if (event.which == 13 || event.which == 27) el.blur()
+						})
+						el.addEventListener("click", (event) => {
+							el.focus()
+							event.stopPropagation()
+						})
+					}, []),
+					dst.htmlEl("div", "clear", (el)=>{el.addEventListener("click", (event) => {
+						statusMenu.querySelector("input").value = ""
+						passwordChange()
+						event.stopPropagation()
+					})}, ["x"])
+				]),
+			])
+			dst.window.document.body.appendChild(statusMenu)
+			setMenuStatus()
+		} else {
+			statusMenu.remove()
+			statusMenu = null
+		}
+	}
+	
+	function passwordChange() {
+		let newPassword = statusMenu.querySelector("input").value
+		if (newPassword == "") newPassword = null
+		if (newPassword == dst.gameInfo.dstPartyId) return
+		dst.gameInfo.dstPartyId = newPassword
+	}
+
+	// connection
 	const socket = io('https://dst.onrender.com/')
 	let recievedData = {players: {}}
 	const positionShareInterval = 1000
@@ -898,23 +1051,26 @@ dst.listenToEvent("ready", ()=>{
 	let lastShareTimestamp = 0
 	let lastRecieveTimestamp = 0
 	let isReconnecting = false
-	dst.registerSetting("position sharing", "share_position_with_all_teammates", true, "bool")
+	dst.registerSetting("position sharing", "share_position_with_teammates", true, "bool")
 	socket.emit("new-user", dst.gameInfo.username)
 
+	// main loop
 	dst.registerTickFunction((deltaTime, ctx) => {
-		if (!dst.settings["share_position_with_all_teammates"].value) return setIconStatus("disabled")
-		if (!dst.gameInfo.isAlive) return setIconStatus("disabled")
-		if (dst.gameInfo.partyId == null) return setIconStatus("blocked")
-		if (dst.gameInfo.gameMode == "sandbox") return setIconStatus("blocked")
+		// disabled conditions and icon
+		if (!dst.settings["share_position_with_teammates"].value) return setStatus("disabled")
+		if (!dst.gameInfo.isAlive) return setStatus("disabled")
+		if (dst.gameInfo.partyId == null) return setStatus("blocked")
+		if (dst.gameInfo.gameMode == "sandbox") return setStatus("blocked")
 		if (socket.connected) {
 			if (dst.gameInfo.dstPartyId != null) {
-				setIconStatus("private")
+				setStatus("private")
 			} else {
-				setIconStatus("public")
+				setStatus("public")
 			}
 		} else {
-			setIconStatus("disconnected")
+			setStatus("disconnected")
 		}
+		
 		// drawing
 		for (playerId in recievedData.players) {
 			if (playerId == socket.id) continue
@@ -931,19 +1087,21 @@ dst.listenToEvent("ready", ()=>{
 		ctx.arc(screenPos.x, screenPos.y, dst.screenInfo.minimap.height * 0.03, 0, Math.PI * 2, false);
 		ctx.fill();
 
+		// sending / reconnecting
 		if (!(dst.previousGameInfo.isAlive && dst.previousGameInfo.partyId != null)) {
 			lastRecieveTimestamp = Date.now()
 		}
 		if (Date.now() - lastShareTimestamp > positionShareInterval && !isReconnecting) {
 			if (dst.DEBUG.logSharingEvents) console.log("sharing position", dst.gameInfo.position)
 			lastShareTimestamp = Date.now()
-			socket.volatile.emit("send-position", dst.gameInfo.partyId, dst.gameInfo.username, dst.gameInfo.position.x, dst.gameInfo.position.y)
+			socket.volatile.emit("send-position", dst.gameInfo.dstPartyId ?? dst.gameInfo.partyId, dst.gameInfo.username, dst.gameInfo.position.x, dst.gameInfo.position.y)
 		}
 		if (Date.now() - lastRecieveTimestamp > disconnectionThreshold && !isReconnecting) {
 			if (dst.DEBUG.logSharingEvents) console.log("sharing is reconnecting")
 			isReconnecting = true
 			socket.disconnect()
 			recievedData = {players: {}}
+			lastRecieveTimestamp = Date.now()
 			setTimeout(() => {
 				socket.connect()
 				socket.emit("new-user", dst.gameInfo.username)
@@ -953,6 +1111,8 @@ dst.listenToEvent("ready", ()=>{
 			}, 2000)
 		}
 	})
+	
+	// recieving
 	socket.on('recieve-positions', data => {
 		recievedData = data
 		if (dst.DEBUG.logSharingEvents) console.log("recieved sharing data", data)
