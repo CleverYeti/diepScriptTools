@@ -75,6 +75,7 @@ const dst = {
 		dst.registerKeybind("DST", "toggle_dst_settings", [226])
 		dst.listenToKeybind("toggle_dst_settings", dst.toggleConfigScreen, true)
 		dst.registerSetting("Debug", "disable_dst_keybind_system", false, "bool")
+		dst.registerSetting("Debug", "override_disabled_keyboard", true, "bool")
 
 		// censoring
 		dst.registerSetting("misc", "censor_player_names", false, "bool")
@@ -365,14 +366,24 @@ const dst = {
 			}
 		}
 		this.window.addEventListener("keydown", event => {
-			if (!dst.settings["disable_dst_keybind_system"].value) {
-				handleKeyEvent(event.which, true)
-			}
+			if (!dst.settings["override_disabled_keyboard"].value) return
+			if (dst.settings["disable_dst_keybind_system"].value) return
+			handleKeyEvent(event.which, true)
+		}, true)
+		this.window.addEventListener("keyup", event => {
+			if (!dst.settings["override_disabled_keyboard"].value) return
+			if (dst.settings["disable_dst_keybind_system"].value) return
+			handleKeyEvent(event.which, false)
+		}, true)
+		this.window.addEventListener("keydown", event => {
+			if (dst.settings["override_disabled_keyboard"].value) return
+			if (dst.settings["disable_dst_keybind_system"].value) return
+			handleKeyEvent(event.which, true)
 		})
 		this.window.addEventListener("keyup", event => {
-			if (!dst.settings["disable_dst_keybind_system"].value) {
-				handleKeyEvent(event.which, false)
-			}
+			if (dst.settings["override_disabled_keyboard"].value) return
+			if (dst.settings["disable_dst_keybind_system"].value) return
+			handleKeyEvent(event.which, false)
 		})
 		this.window.addEventListener("mousedown", event => {
 			if (!dst.settings["disable_dst_keybind_system"].value) {
@@ -612,32 +623,32 @@ const dst = {
 
 	// game info
 	gameInfo: {
-		gameMode: "ffa",
-		region: "atl",
-		partyId: "LOADING",
-		dstPartyId: null,
-		isConnected: false,
-		isSpectating: false,
+		gameMode: "ffa", // working
+		region: "atl", // working
+		partyId: "LOADING", // working
+		dstPartyId: null, // working
+		isConnected: false,	// working
+		isSpectating: false, // working
 		
-		gameState: null,
-		currentScreen: "home",
+		gameState: null, // working
+		currentScreen: "home", // working
 
-		arenaWidth: 26000,
-		arenaHeight: 26000,
+		arenaWidth: 26000, // fixed
+		arenaHeight: 26000, // fixed
 		
-		isAlive: false,
-		health: 0,
-		maxHealth: 0,
-		statPoints: [null,0,0,0,0,0,0,0,0],
-		position: {x:0,y:0},
-		playerRotation: 0, // computed from position and worldMousePosition 
-		teamName: "",
-		teamNumber: 0, // 0,1,2,3
-		username: "TEST",
-		treatedUsername: "", // replaces nothing with unnamed tank
-		level: 0,
-		score: 0,
-		tank: "", //
+		isAlive: false, // working
+		health: 0, // TODO
+		maxHealth: 0, // TODO
+		statPoints: [null,0,0,0,0,0,0,0,0], // TODO
+		position: {x:0,y:0}, // working
+		playerRotation: 0, // TODO
+		teamName: "", // TODO
+		teamNumber: 0, // 0,1,2,3 TODO
+		username: "TEST", // working
+		treatedUsername: "", // TODO - replaces nothing with unnamed tank
+		level: 0, // working
+		score: 0, // working
+		tank: "", // working
 		tankTier: 0, // currently selected tank tier
 		leaderboard: [], // {username:, score:, tank}
 		kills: [], // {username:, gainedScore:}
@@ -987,7 +998,7 @@ dst.listenToEvent("ready", ()=>{
 		if (currentStatus == "disabled") togglePositionMenu()
 		statusText.innerText = {
 			"disabled": "Disabled",
-			"disabled": "Unavailable in this gamemode",
+			"blocked": "Unavailable in this gamemode",
 			"disconnected": "Attempting to connect. The server may be starting up.",
 			"public": "Sharing position to whole team",
 			"private": "Sharing position privately with the password below",
