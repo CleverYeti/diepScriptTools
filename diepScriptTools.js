@@ -75,7 +75,7 @@ const dst = {
 		dst.registerKeybind("DST", "toggle_dst_settings", [226])
 		dst.listenToKeybind("toggle_dst_settings", dst.toggleConfigScreen, true)
 		dst.registerSetting("Debug", "disable_dst_keybind_system", false, "bool")
-		dst.registerSetting("Debug", "override_disabled_keyboard", true, "bool")
+		dst.registerSetting("Debug", "prevent_disabled_keyboard", false, "bool")
 
 		// censoring
 		dst.registerSetting("misc", "censor_player_names", false, "bool")
@@ -366,22 +366,22 @@ const dst = {
 			}
 		}
 		this.window.addEventListener("keydown", event => {
-			if (!dst.settings["override_disabled_keyboard"].value) return
+			if (!dst.settings["prevent_disabled_keyboard"].value) return
 			if (dst.settings["disable_dst_keybind_system"].value) return
 			handleKeyEvent(event.which, true)
 		}, true)
 		this.window.addEventListener("keyup", event => {
-			if (!dst.settings["override_disabled_keyboard"].value) return
+			if (!dst.settings["prevent_disabled_keyboard"].value) return
 			if (dst.settings["disable_dst_keybind_system"].value) return
 			handleKeyEvent(event.which, false)
 		}, true)
 		this.window.addEventListener("keydown", event => {
-			if (dst.settings["override_disabled_keyboard"].value) return
+			if (dst.settings["prevent_disabled_keyboard"].value) return
 			if (dst.settings["disable_dst_keybind_system"].value) return
 			handleKeyEvent(event.which, true)
 		})
 		this.window.addEventListener("keyup", event => {
-			if (dst.settings["override_disabled_keyboard"].value) return
+			if (dst.settings["prevent_disabled_keyboard"].value) return
 			if (dst.settings["disable_dst_keybind_system"].value) return
 			handleKeyEvent(event.which, false)
 		})
@@ -1145,6 +1145,18 @@ dst.registerTickFunction(() => {
 	} else {
 		document.getElementById("openDSTSettings").classList.remove("active")
 	}
+})
+
+// getting rid of the bugged ads
+dst.registerSetting("Debug", "remove_bugged_ads", true, "bool")
+dst.registerTickFunction(() => {
+	if (!dst.settings["remove_bugged_ads"].value) return
+    document.querySelectorAll("iframe").forEach(el => {
+        if (el.id.includes("google_ads") && !el.id.includes("300x250")) {
+            console.log("zapped a google ad")
+            el.remove()
+        }
+    })
 })
 
 // hooking into functions
