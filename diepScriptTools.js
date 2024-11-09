@@ -71,11 +71,24 @@ const dst = {
 		dst.registerDefaultKeybind("Misc", "take_dominator", [72], 8)
 		dst.registerDefaultKeybind("Misc", "fullscreen", [113], 57)
 		dst.registerDefaultKeybind("Misc", "open_console", [36], 59)
-
+		
 		dst.registerKeybind("DST", "toggle_dst_settings", [226])
 		dst.listenToKeybind("toggle_dst_settings", dst.toggleConfigScreen, true)
+
+		// default settings
 		dst.registerSetting("Debug", "disable_dst_keybind_system", false, "bool")
 		dst.registerSetting("Debug", "prevent_disabled_keyboard", false, "bool")
+		
+		dst.registerConsoleSetting("misc", "predict_movement", true, "bool", "net_predict_movement")
+
+		dst.registerConsoleSetting("interface", "show_fps", false, "bool", "ren_fps")
+		dst.registerConsoleSetting("interface", "show_health_bars", true, "bool", "ren_health_bars")
+		dst.registerConsoleSetting("interface", "show_player_names", true, "bool", "ren_names")
+		dst.registerConsoleSetting("interface", "show_health_values", false, "bool", "ren_raw_health_values")
+		dst.registerConsoleSetting("interface", "show_leaderboard", true, "bool", "ren_scoreboard")
+		dst.registerConsoleSetting("interface", "show_leaderboard_names", true, "bool", "ren_scoreboard_names")
+		dst.registerConsoleSetting("interface", "show_stat_upgrades", true, "bool", "ren_stats")
+		dst.registerConsoleSetting("interface", "show_tank_upgrades", true, "bool", "ren_upgrades")
 
 		// censoring
 		dst.registerSetting("misc", "censor_player_names", false, "bool")
@@ -535,8 +548,18 @@ const dst = {
 		this.settings[settingId] = {settingGroupId: settingGroupId, defaultValue: defaultValue, value: dst.savedSettings[settingId] ?? defaultValue, valueType: valueType, listeners: []}
 	},
 	listenToSettingChange(settingId, func = (newValue, previousValue) => {}) {
-        if (this.settings[settingId] != undefined) return this.showError("cannot listen to changes in inexistant setting (" + settingId + ")")
+        if (this.settings[settingId] == undefined) return this.showError("cannot listen to changes in inexistant setting (" + settingId + ")")
 		this.settings[settingId].listeners.push(func)
+	},
+	registerConsoleSetting: function(settingGroupId, settingId, defaultValue, valueType, consoleId, isInverted) {
+		dst.registerSetting(settingGroupId, settingId, defaultValue, valueType)
+		function setValue() {
+			console.log(dst.settings[settingId].value)
+			if (!dst.window.input) return console.warn("failed to set setting too early")
+				dst.window.input.set_convar(consoleId, dst.settings[settingId].value)
+		}
+		// dst.listenToSettingChange(settingId, () => {setValue()})
+		dst.registerTickFunction(() => setValue()) // required becuse they randomly get reset
 	},
 	getSettingsAsJson: function() {
 		if (this.settingsAreImported) return
@@ -792,8 +815,8 @@ const dst = {
 					]),
 					this.htmlEl("div", setting.value ? "toggle active" : "toggle", (el) => {
 						el.addEventListener("click", () => {
-							for (let listener in setting.listeners) listener(!setting.value, setting.value)
 							setting.value = !setting.value
+							for (let listener of setting.listeners) listener(!setting.value, setting.value)
 							el.classList.toggle("active")
 						})
 					}, [])
