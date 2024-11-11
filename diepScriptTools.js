@@ -554,7 +554,6 @@ const dst = {
 	registerConsoleSetting: function(settingGroupId, settingId, defaultValue, valueType, consoleId, isInverted) {
 		dst.registerSetting(settingGroupId, settingId, defaultValue, valueType)
 		function setValue() {
-			console.log(dst.settings[settingId].value)
 			if (!dst.window.input) return console.warn("failed to set setting too early")
 				dst.window.input.set_convar(consoleId, dst.settings[settingId].value)
 		}
