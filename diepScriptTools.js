@@ -413,33 +413,13 @@ const dst = {
 			}
 		})
 
-		// party link management
+		// replacing the copy part link function
 		const _copyToKeyboard = dst.window.copyToKeyboard
 		function copyToKeyboard(text) {
-			let url
-			try {
-				url = URL.parse(text)
-			} catch {
-				console.log("failed parsing party link")
-				return
-			}
-			dst.gameInfo.partyId = url.searchParams.get("p")
-			dst.copyPartyLink()
+			dst.window.navigator.clipboard.writeText(dst.gameInfo.gameLink)
 		}
 		dst.window.copyToKeyboard = copyToKeyboard
 
-		dst.registerTickFunction(() => {
-			if (dst.window.document.querySelector("#copy-party-link.active") && ["in-game", "game-over"].includes(dst.gameInfo.gameState)) {
-				if (!dst.gameInfo.partyId) {
-					dst.window.document.querySelector("#copy-party-link").click()
-				}
-			} else {
-				if (dst.gameInfo.partyId) {
-					dst.gameInfo.partyId = null
-					dst.copyPartyLink()
-				}
-			}
-		})
 
 		// initialising overlay canvas
 		this.overlayCanvas = document.createElement("canvas")
@@ -647,7 +627,12 @@ const dst = {
 	gameInfo: {
 		gameMode: "ffa", // working
 		region: "atl", // working
-		partyId: "LOADING", // working
+		partyId: null, // working
+		serverId: null,
+		lobbyId: null,
+		teamId: null,
+		gameId: null,
+		gameLink: "https://diep.io/",
 		dstPartyId: null, // working
 		isConnected: false,	// working
 		isSpectating: false, // working
@@ -665,7 +650,6 @@ const dst = {
 		position: {x:0,y:0}, // working
 		playerRotation: 0, // TODO
 		teamName: "", // TODO
-		teamNumber: 0, // 0,1,2,3 TODO
 		username: "TEST", // working
 		treatedUsername: "", // TODO - replaces nothing with unnamed tank
 		level: 0, // working
@@ -721,20 +705,6 @@ const dst = {
 	},
 	htmlText: function(text) {
 		return document.createTextNode(text)
-	},
-
-	// swapping in the party link for the modified one
-	copyPartyLink: function() {
-		const url = URL.parse("https://diep.io")
-		if (dst.gameInfo.partyId) {
-			url.searchParams.append("p", dst.gameInfo.partyId)
-		}
-		// no dst id for now
-		//if (dst.gameInfo.dstPartyId) {
-		//	url.searchParams.append("dstparty", dst.gameInfo.dstPartyId)
-		//}
-		dst.window.navigator.clipboard.writeText(url.toString())
-		window.history.pushState({ path: url.toString() }, '', url.toString());
 	},
 
 	// config screen
@@ -891,10 +861,10 @@ dst.registerTickFunction(()=>{
 	if (dst.gameInfo.currentScreen == "home") {
 		const nameEl = document.querySelector("#spawn-nickname")
     	if (nameEl) dst.gameInfo.username = nameEl.value
-		const regionEl = document.querySelector("#home-screen > #server-selector > #region-selector > .selector > .selected")
-    	if (regionEl) dst.gameInfo.region = regionEl.getAttribute("value")
-		const gameModeEl = document.querySelector("#home-screen > #server-selector > #gamemode-selector > .selector > .selected")
-		if (gameModeEl) dst.gameInfo.gameMode = gameModeEl.getAttribute("value")
+		//const regionEl = document.querySelector("#home-screen > #server-selector > #region-selector > .selector > .selected")
+    	//if (regionEl) dst.gameInfo.region = regionEl.getAttribute("value")
+		//const gameModeEl = document.querySelector("#home-screen > #server-selector > #gamemode-selector > .selector > .selected")
+		//if (gameModeEl) dst.gameInfo.gameMode = gameModeEl.getAttribute("value")
 	}
 })
 
@@ -1092,7 +1062,7 @@ dst.listenToEvent("ready", ()=>{
 		// disabled conditions and icon
 		if (!dst.settings["share_position_with_teammates"].value) return setStatus("disabled")
 		if (!dst.gameInfo.isAlive) return setStatus("disabled")
-		if (dst.gameInfo.partyId == null) return setStatus("blocked")
+		if (!(["teams", "4teams"].includes(dst.gameInfo.gameMode))) return setStatus("blocked")
 		if (dst.gameInfo.gameMode == "sandbox") return setStatus("blocked")
 		if (socket.connected) {
 			if (dst.gameInfo.dstPartyId != null) {
@@ -1166,6 +1136,39 @@ dst.registerTickFunction(() => {
 		document.getElementById("openDSTSettings").classList.add("active")
 	} else {
 		document.getElementById("openDSTSettings").classList.remove("active")
+	}
+})
+
+// tracking party link
+dst.registerTickFunction(() => {
+	dst.lastCopied
+	dst.window.document.querySelectorAll("#copy-party-link").forEach(el => el.classList.add("active"))
+	if (!dst.gameInfo.isAlive || dst.window.lobby_ip == undefined || dst.window.__common__.party_link == undefined || dst.window.lobby_gamemode == undefined) {
+		dst.gameInfo.gameMode = null
+		dst.gameInfo.region = null
+		dst.gameInfo.serverId = null
+		dst.gameInfo.lobbyId = null
+		dst.gameInfo.gameId = null
+		dst.gameInfo.teamId = null
+		dst.gameInfo.partyId = null
+		let url = "https://diep.io/"
+		if (window.location.href != url) dst.window.history.pushState({ path: url }, '', url);
+		dst.gameInfo.gameLink = url
+	} else {
+		dst.gameInfo.gameMode = dst.window.lobby_gamemode;
+		dst.gameInfo.region = dst.window.lobby_ip.split(".")[0].split("-")[0];
+		dst.gameInfo.serverId = dst.window.lobby_ip.split(".")[0].split("-")[1];
+		dst.gameInfo.lobbyId = dst.window.__common__.party_link.split("x")[0];
+		dst.gameInfo.gameId = dst.gameInfo.serverId + "-" + dst.gameInfo.lobbyId
+		dst.gameInfo.teamId = dst.window.__common__.party_link.split("x")[1];
+		dst.gameInfo.partyId = `s=${dst.gameInfo.region}-${dst.gameInfo.serverId}&g=${dst.gameInfo.gameMode}&l=${dst.gameInfo.lobbyId}x${dst.gameInfo.teamId}`
+		let url = "https://diep.io/"
+		if (dst.gameInfo.partyId) {
+			url += "?" + dst.gameInfo.partyId
+			if (dst.gameInfo.dstPartyId) url += "&dstparty=" + dst.gameInfo.partyId
+		}
+		if (window.location.href != url) dst.window.history.pushState({ path: url }, '', url);
+		dst.gameInfo.gameLink = url
 	}
 })
 
